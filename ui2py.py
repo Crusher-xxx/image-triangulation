@@ -1,4 +1,4 @@
-'Compile all .ui files to .py files'
+"""Compile all .ui files to .py files"""
 
 import subprocess
 from pathlib import Path

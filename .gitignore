@@ -1,4 +1,12 @@
+# Dependencies
 /.venv/
+
+# Python auto-generated
+__pycache__
 *.pyc
-/video/
+
+# Compiled ui files
 /ui/uic/
+
+# Video files for debugging
+/video/
