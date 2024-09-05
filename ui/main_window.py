@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from PySide6.QtCore import QFileInfo
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow
 
 from videosync import intersection
@@ -13,6 +14,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setWindowIcon(QIcon('res/coordinates.png'))
 
         vid1 = QFileInfo('video/2024-09-05_14-26-47.277_cam1.mp4')
         vid2 = QFileInfo('video/2024-09-05_14-26-47.297_cam2.mp4')
