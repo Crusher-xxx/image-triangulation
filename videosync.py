@@ -1,10 +1,15 @@
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 
 
-def intersection(start1: datetime, start2: datetime, duration1: int, duration2: int):
-    """Find time interval present in both videos"""
-    end1 = start1 + timedelta(milliseconds=duration1)
-    end2 = start2 + timedelta(milliseconds=duration2)
-    start = max(start1, start2)
-    end = min(end1, end2)
+def intersection(starts: Sequence[datetime], durations: Sequence[timedelta]):
+    """Find time interval present in all videos"""
+    ends = [start + duration for start, duration in zip(starts, durations)]
+
+    start = max(starts)
+    end = min(ends)
+
+    if start > end:
+        raise AssertionError('Intervals do not intersect')
+    
     return start, end
