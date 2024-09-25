@@ -10,7 +10,7 @@ from geomath import Camera, Triangulator
 from ui.main_window import MainWindow
 
 
-def read_cam_data(json_file_path: str, cam_names):
+def read_cam_data(json_file_path: str, cam_keys):
     with open(json_file_path) as f:
         data: dict = json.load(f)
 
@@ -19,13 +19,13 @@ def read_cam_data(json_file_path: str, cam_names):
     
     cams: list[Camera] = []
     videos: list[str] = []
-    for cam_name in cam_names:
-        video = data[cam_name]['file']
+    for cam_key in cam_keys:
+        video = data[cam_key]['file']
 
-        fx = data[cam_name]['fx']
-        fy = data[cam_name]['fy']
-        cx = data[cam_name]['cx']
-        cy = data[cam_name]['cy']
+        fx = data[cam_key]['fx']
+        fy = data[cam_key]['fy']
+        cx = data[cam_key]['cx']
+        cy = data[cam_key]['cy']
 
         cam_mtx = np.array([
             [fx,  0, cx],
@@ -33,13 +33,13 @@ def read_cam_data(json_file_path: str, cam_names):
             [ 0,  0,  1],
         ])
 
-        cam_geodetic = data[cam_name]['cam_geodetic']
+        cam_geodetic = data[cam_key]['cam_geodetic']
 
-        cp1_pix = data[cam_name]['cp1_pix']
-        cp2_pix = data[cam_name]['cp2_pix']
+        cp1_pix = data[cam_key]['cp1_pix']
+        cp2_pix = data[cam_key]['cp2_pix']
 
-        distortion_coeffs = np.array(data[cam_name]['distortion_coeffs'])
-        resolution = data[cam_name]['resolution']
+        distortion_coeffs = np.array(data[cam_key]['distortion_coeffs'])
+        resolution = data[cam_key]['resolution']
         cam = Camera(cam_geodetic, cam_mtx, distortion_coeffs, resolution, cp1_geodetic, cp2_geodetic, cp1_pix, cp2_pix)
 
         videos.append(video)
@@ -48,9 +48,9 @@ def read_cam_data(json_file_path: str, cam_names):
 
 
 class Controller:
-    def __init__(self, window: MainWindow, cam_names) -> None:
+    def __init__(self, window: MainWindow, cam_keys) -> None:
         self.window = window
-        self.cam_names = cam_names
+        self.cam_keys = cam_keys
         self.triangulated_frames = {}
 
     def load_file_gui(self):
@@ -60,7 +60,7 @@ class Controller:
 
     def load_file(self, file_path):
         file_info = QFileInfo(file_path)
-        cams, videos = read_cam_data(file_path, self.cam_names)
+        cams, videos = read_cam_data(file_path, self.cam_keys)
         videos = [f'{file_info.dir().path()}/{video}' for video in videos]
 
         self.triangulator = Triangulator(*cams)
@@ -68,20 +68,20 @@ class Controller:
 
         window.open_files(videos, undistorters)
 
-    def triangulate_frame(self, dt, p1: QPointF, p2: QPointF):
-        p1 = p1.toTuple()
-        p2 = p2.toTuple()
-        enu = self.triangulator.triangulate(p1, p2)
-        self.triangulated_frames[dt] = enu
+    def triangulate_frame(self, frame_datetime, pix1: QPointF, pix2: QPointF):
+        pix1 = pix1.toTuple()
+        pix2 = pix2.toTuple()
+        enu = self.triangulator.triangulate(pix1, pix2)
+        self.triangulated_frames[frame_datetime] = enu
         geodetic = np.array(pm.enu2geodetic(*enu, *self.triangulator.cam1.cam_geodetic))
-        print(dt, p1, p2, enu.tolist(), geodetic.tolist())
+        print(frame_datetime, pix1, pix2, enu.tolist(), geodetic.tolist())
 
 
 if __name__ == '__main__':
     app = QApplication([])
 
     cam_names = 'cam1', 'cam2'
-    window = MainWindow(cam_names)
+    window = MainWindow()
     controller = Controller(window, cam_names)
 
     window.closed.connect(app.quit)

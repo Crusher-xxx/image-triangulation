@@ -16,28 +16,25 @@ class MainWindow(QMainWindow):
     closed = Signal()
     both_frames_clicked = Signal(datetime, QPointF, QPointF)
 
-    def __init__(self, cam_names):
+    def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon('res/coordinates.png'))
 
-        self.cams = {
-            cam_names[0]: self.ui.cam1,
-            cam_names[1]: self.ui.cam2
-        }
+        self.cams = self.ui.cam1, self.ui.cam2
 
-        for cam_name, cam in self.cams.items():
+        for i, cam in enumerate(self.cams):
             cam.loaded.connect(self.on_duration_available)
-            cam.mouse_pressed.connect(lambda click_pos, cam_name=cam_name: self.handle_click(cam_name, click_pos))
+            cam.mouse_pressed.connect(lambda click_pos, i=i: self._handle_click(i, click_pos))
 
-        self.ui.horizontal_slider.valueChanged.connect(self.on_slider_value_changed)
+        self.ui.horizontal_slider.valueChanged.connect(self._on_slider_value_changed)
         self.ui.horizontal_slider.setSingleStep(1000)
 
     def open_files(self, videos: Sequence[str], undistorters: Sequence[Callable]):
-        self.clicked_points = defaultdict(dict)
+        self.clicked_points = defaultdict(lambda: [None, None])
 
-        for video, (cam_name, cam), undistorter in zip(videos, self.cams.items(), undistorters):
+        for video, cam, undistorter in zip(videos, self.cams, undistorters):
             video_file_info = QFileInfo(video)
             if not video_file_info.exists():
                 raise FileExistsError(video)
@@ -47,7 +44,7 @@ class MainWindow(QMainWindow):
 
     def on_duration_available(self):
         # Check if all videos are loaded
-        for cam in self.cams.values():
+        for cam in self.cams:
             if cam.duration is None:
                 return
 
@@ -58,24 +55,27 @@ class MainWindow(QMainWindow):
         self.duration = self.end - self.start
         self.ui.horizontal_slider.setMaximum(round(self.duration.total_seconds() * 1000))
         self.current = self.start + timedelta(milliseconds=self.ui.horizontal_slider.value())
-        self.go_to(self.current)
+        self._go_to(self.current)
         self.ui.horizontal_slider.setValue(0)
 
-    def go_to(self, dt: datetime):
+    def _go_to(self, dt: datetime):
         self.ui.cam1.go_to(dt)
         self.ui.cam2.go_to(dt)
 
-    def on_slider_value_changed(self, value):
+    def _on_slider_value_changed(self, value):
         self.current = self.start + timedelta(milliseconds=value)
         print(self.current)
-        self.go_to(self.current)
+        self._go_to(self.current)
 
     def closeEvent(self, event: QCloseEvent):
         self.closed.emit()
         return super().closeEvent(event)
     
-    def handle_click(self, cam_name: str, click_pos: QPointF):
-        self.clicked_points[self.current][cam_name] = click_pos
+    def _handle_click(self, cam_id: str, click_pos: QPointF):
+        self.clicked_points[self.current][cam_id] = click_pos
 
-        if len(self.clicked_points[self.current]) == 2:
-            self.both_frames_clicked.emit(self.current, *self.clicked_points[self.current].values())
+        # Send signal only if both frames have been clicked
+        if None in self.clicked_points[self.current]:
+            return
+
+        self.both_frames_clicked.emit(self.current, *self.clicked_points[self.current])
