@@ -2,6 +2,7 @@ import json
 import sys
 
 import numpy as np
+import pymap3d as pm
 from PySide6.QtCore import QFileInfo, QPointF
 from PySide6.QtWidgets import QApplication, QFileDialog
 
@@ -47,7 +48,7 @@ def read_cam_data(json_file_path: str, cam_names):
 
 
 class Controller:
-    def __init__(self, window, cam_names) -> None:
+    def __init__(self, window: MainWindow, cam_names) -> None:
         self.window = window
         self.cam_names = cam_names
         self.triangulated_frames = {}
@@ -70,9 +71,10 @@ class Controller:
     def triangulate_frame(self, dt, p1: QPointF, p2: QPointF):
         p1 = p1.toTuple()
         p2 = p2.toTuple()
-        coords = self.triangulator.triangulate(p1, p2)
-        self.triangulated_frames[dt] = coords
-        print(dt, coords)
+        enu = self.triangulator.triangulate(p1, p2)
+        self.triangulated_frames[dt] = enu
+        geodetic = np.array(pm.enu2geodetic(*enu, *self.triangulator.cam1.cam_geodetic))
+        print(dt, p1, p2, enu.tolist(), geodetic.tolist())
 
 
 if __name__ == '__main__':
@@ -86,7 +88,7 @@ if __name__ == '__main__':
     window.both_frames_clicked.connect(controller.triangulate_frame)
     window.ui.action_open_file.triggered.connect(controller.load_file_gui)
 
-    controller.load_file('video/test.json')
+    controller.load_file('video/test copy.json')
 
     window.show()
     sys.exit(app.exec())

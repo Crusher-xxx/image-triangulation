@@ -82,7 +82,7 @@ class Triangulator:
         self.cam1 = cam1
         self.cam2 = cam2
         self.cam1_enu = np.array([0.0, 0.0, 0.0])
-        self.cam2_enu = pm.geodetic2enu(*self.cam1.cam_geodetic, *self.cam2.cam_geodetic)
+        self.cam2_enu = pm.geodetic2enu(*self.cam2.cam_geodetic, *self.cam1.cam_geodetic)
 
     def triangulate(self, pix1, pix2):
         p1_dirvec_enu = self.cam1.pixel2dirvec_enu(pix1)
