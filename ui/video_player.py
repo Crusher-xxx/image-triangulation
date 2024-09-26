@@ -1,12 +1,13 @@
 from datetime import datetime
 
 from araviq6 import VideoFrameProcessor, VideoFrameWorker
-from PySide6.QtCore import QEvent, QFileInfo, QObject, QPointF, Qt, Signal
+from PySide6.QtCore import QFileInfo, QPointF, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QResizeEvent
 from PySide6.QtMultimedia import QMediaPlayer, QVideoSink
-from PySide6.QtMultimediaWidgets import QGraphicsVideoItem, QVideoWidget
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsSceneMouseEvent, QWidget
+from PySide6.QtMultimediaWidgets import QVideoWidget
+from PySide6.QtWidgets import QGraphicsScene, QWidget
 
+from .graphicsvideoitem import GraphicsVideoItem
 from .uic.video_player import Ui_VideoPlayer
 
 
@@ -25,7 +26,7 @@ class VideoPlayer(QWidget):
         self._video_widget_raw = QVideoWidget()
         self._video_widget_raw.show()
         # Processed video frames are displayed here
-        self._graphics_video_item = QGraphicsVideoItem()
+        self._graphics_video_item = GraphicsVideoItem()
 
         # Frame processing
         self._frame_worker = VideoFrameWorker()
@@ -44,12 +45,11 @@ class VideoPlayer(QWidget):
         self._player.setVideoOutput(self._video_sink_raw)
 
         # Styling
-        self._graphics_video_item.setCursor(Qt.CursorShape.CrossCursor)
         self._graphics_scene.setBackgroundBrush(Qt.GlobalColor.gray)
 
-        self._graphics_video_item.nativeSizeChanged.connect(self.repositionScene)
-        self._graphics_video_item.installEventFilter(self)
+        self._graphics_video_item.nativeSizeChanged.connect(self.fit2video)
         self._player.metaDataChanged.connect(self._on_metadata_changed)
+        self._graphics_video_item.mouse_pressed.connect(self.mouse_pressed.emit)
 
     def open_video(self, video: QFileInfo, start: datetime, undistorter):
         # Block signals so that frame processor doesnt get None as a frame
@@ -64,22 +64,11 @@ class VideoPlayer(QWidget):
         self.start = start
 
     def resizeEvent(self, event: QResizeEvent) -> None:
-        self.ui.graphicsView.fitInView(self._graphics_video_item, Qt.AspectRatioMode.KeepAspectRatio)
+        self.fit2video()
         return super().resizeEvent(event)
     
-    def repositionScene(self):
-        # Bring item's size to native video size so that the mouse position represents pixel in the video
-        self._graphics_video_item.setSize(self._graphics_video_item.nativeSize())
+    def fit2video(self):
         self.ui.graphicsView.fitInView(self._graphics_video_item, Qt.AspectRatioMode.KeepAspectRatio)
-    
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        match event.type():
-            case QGraphicsSceneMouseEvent.Type.GraphicsSceneMousePress:
-                gsmp: QGraphicsSceneMouseEvent = event
-                match gsmp.button():
-                    case Qt.MouseButton.LeftButton:
-                        self.mouse_pressed.emit(gsmp.pos())
-        return super().eventFilter(watched, event)
     
     def _on_metadata_changed(self):
         self.duration = self._player.duration()

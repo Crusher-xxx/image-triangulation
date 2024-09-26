@@ -34,10 +34,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QGraphicsView" name="graphicsView"/>
+    <widget class="GraphicsView" name="graphicsView"/>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>ui.graphicsview</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
