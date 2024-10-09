@@ -3,7 +3,7 @@ from datetime import datetime
 from araviq6 import VideoFrameProcessor, VideoFrameWorker
 from PySide6.QtCore import QFileInfo, QPointF, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QResizeEvent
-from PySide6.QtMultimedia import QMediaPlayer, QVideoSink
+from PySide6.QtMultimedia import QMediaPlayer, QVideoSink, QVideoFrame
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import QGraphicsScene, QWidget
 
@@ -52,7 +52,7 @@ class VideoPlayer(QWidget):
         self._graphics_video_item.mouse_pressed.connect(self.mouse_pressed.emit)
 
     def open_video(self, video: QFileInfo, start: datetime, undistorter):
-        # Block signals so that frame processor doesnt get None as a frame
+        # Block signals so that frame processor doesn't get None as a frame
         self._video_sink_raw.blockSignals(True)
         self._player.setSource(video.filePath())
         self._video_sink_raw.blockSignals(False)

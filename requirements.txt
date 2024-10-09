@@ -1,9 +1,9 @@
 araviq6==2.1.1
-numpy==2.1.1
+numpy==2.1.2
 opencv-python==4.10.0.84
 pymap3d==3.1.0
-PySide6==6.7.2
-PySide6_Addons==6.7.2
-PySide6_Essentials==6.7.2
+PySide6==6.7.3
+PySide6_Addons==6.7.3
+PySide6_Essentials==6.7.3
 qimage2ndarray==1.10.0
-shiboken6==6.7.2
+shiboken6==6.7.3

@@ -44,6 +44,7 @@
      <string>File</string>
     </property>
     <addaction name="action_open_file"/>
+    <addaction name="action_export_data"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -51,6 +52,11 @@
   <action name="action_open_file">
    <property name="text">
     <string>Open</string>
+   </property>
+  </action>
+  <action name="action_export_data">
+   <property name="text">
+    <string>Export</string>
    </property>
   </action>
  </widget>

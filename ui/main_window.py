@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
+from math import floor
 
 from PySide6.QtCore import QFileInfo, QPointF, Signal
 from PySide6.QtGui import QCloseEvent, QIcon
@@ -28,11 +29,11 @@ class MainWindow(QMainWindow):
             cam.loaded.connect(self.on_duration_available)
             cam.mouse_pressed.connect(lambda click_pos, i=i: self._handle_click(i, click_pos))
 
+        self.single_step = 1000  # in milliseconds
         self.ui.horizontal_slider.valueChanged.connect(self._on_slider_value_changed)
-        self.ui.horizontal_slider.setSingleStep(1000)
 
     def open_files(self, videos: Sequence[str], undistorters: Sequence[Callable]):
-        self.clicked_points = defaultdict(lambda: [None, None])
+        self.clicked_points: defaultdict[datetime, list[QPointF | None]] = defaultdict(lambda: [None, None])
 
         for video, cam, undistorter in zip(videos, self.cams, undistorters):
             video_file_info = QFileInfo(video)
@@ -49,21 +50,26 @@ class MainWindow(QMainWindow):
                 return
 
         starts = self.ui.cam1.start, self.ui.cam2.start
-        ends = timedelta(milliseconds=self.ui.cam1.duration), timedelta(milliseconds=self.ui.cam2.duration)
-        self.start, self.end = intersection(starts, ends)
-        
+        durations = timedelta(milliseconds=self.ui.cam1.duration), timedelta(milliseconds=self.ui.cam2.duration)
+        self.start, self.end = intersection(starts, durations)
+
+        # !!! Костыль !!! В одном видео Qt почему-то возвращал битый кадр, если
+        # перейти на последнюю миллисекунду.
+        self.end -= timedelta(milliseconds=1)
         self.duration = self.end - self.start
-        self.ui.horizontal_slider.setMaximum(round(self.duration.total_seconds() * 1000))
-        self.current = self.start + timedelta(milliseconds=self.ui.horizontal_slider.value())
-        self._go_to(self.current)
+
+        slider_max_value = floor((self.duration.total_seconds() * 1000) / self.single_step)
+        self.ui.horizontal_slider.setMaximum(slider_max_value)
         self.ui.horizontal_slider.setValue(0)
 
     def _go_to(self, dt: datetime):
+        if dt < self.start or dt > self.end:
+            raise IndexError(f'datetime {dt} out of range [{self.start} - {self.end}]')
         self.ui.cam1.go_to(dt)
         self.ui.cam2.go_to(dt)
 
     def _on_slider_value_changed(self, value):
-        self.current = self.start + timedelta(milliseconds=value)
+        self.current = self.start + timedelta(milliseconds=value*self.single_step)
         print(self.current)
         self._go_to(self.current)
 

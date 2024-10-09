@@ -1,8 +1,9 @@
+import csv
 import json
 import sys
+from datetime import datetime
 
 import numpy as np
-import pymap3d as pm
 from PySide6.QtCore import QFileInfo, QPointF
 from PySide6.QtWidgets import QApplication, QFileDialog
 
@@ -51,30 +52,49 @@ class Controller:
     def __init__(self, window: MainWindow, cam_keys) -> None:
         self.window = window
         self.cam_keys = cam_keys
-        self.triangulated_frames = {}
+        self.triangulated_frames: dict[datetime, tuple] = {}
 
     def load_file_gui(self):
-        file_name, _ = QFileDialog.getOpenFileName(window, "Open File", filter='JSON (*.json)')
-        if file_name:
-            self.load_file(file_name)
+        file_path, _ = QFileDialog.getOpenFileName(self.window, filter='JSON (*.json)')
+        if file_path:
+            self.load_file(file_path)
 
-    def load_file(self, file_path):
-        file_info = QFileInfo(file_path)
+    def load_file(self, file_path: str):
+        self.file_info = QFileInfo(file_path)
         cams, videos = read_cam_data(file_path, self.cam_keys)
-        videos = [f'{file_info.dir().path()}/{video}' for video in videos]
+        videos = [f'{self.file_info.dir().path()}/{video}' for video in videos]
 
         self.triangulator = Triangulator(*cams)
         undistorters = self.triangulator.cam1.undistort, self.triangulator.cam2.undistort
 
-        window.open_files(videos, undistorters)
+        self.window.open_files(videos, undistorters)
 
-    def triangulate_frame(self, frame_datetime, pix1: QPointF, pix2: QPointF):
+    def triangulate_frame(self, frame_datetime: datetime, pix1: QPointF, pix2: QPointF):
         pix1 = pix1.toTuple()
         pix2 = pix2.toTuple()
-        enu = self.triangulator.triangulate(pix1, pix2)
-        self.triangulated_frames[frame_datetime] = enu
-        geodetic = np.array(pm.enu2geodetic(*enu, *self.triangulator.cam1.cam_geodetic))
+        enu, geodetic = self.triangulator.triangulate(pix1, pix2)
+        self.triangulated_frames[frame_datetime] = *enu.tolist(), *geodetic.tolist()
         print(frame_datetime, pix1, pix2, enu.tolist(), geodetic.tolist())
+
+    def export_data_gui(self):
+        file_path_no_ext = f'{self.file_info.dir().path()}/{self.file_info.baseName()}'
+        print(123, file_path_no_ext)
+        file_path, _ = QFileDialog.getSaveFileName(self.window, dir=file_path_no_ext, filter='Text file (*.txt)')
+        if file_path:
+            self.export_data(file_path)
+
+    def export_data(self, file_path: str):
+        headers = 'datetime', 'e', 'n', 'u', 'lat', 'lon', 'alt'
+        rows = [(key, *val) for key, val in sorted(self.triangulated_frames.items())]
+
+        with open(file_path, 'w', newline='') as f:
+            w = csv.writer(f, delimiter='\t')
+            w.writerow(headers)
+            w.writerows(rows)
+            # for key, val in self.triangulated_frames.items():
+            #     row = key, *val
+            #     w.writerow(row)
+
 
 
 if __name__ == '__main__':
@@ -87,6 +107,7 @@ if __name__ == '__main__':
     window.closed.connect(app.quit)
     window.both_frames_clicked.connect(controller.triangulate_frame)
     window.ui.action_open_file.triggered.connect(controller.load_file_gui)
+    window.ui.action_export_data.triggered.connect(controller.export_data_gui)
 
     controller.load_file('video/test copy.json')
 
