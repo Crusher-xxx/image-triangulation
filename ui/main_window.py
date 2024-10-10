@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
             cam.loaded.connect(self.on_duration_available)
             cam.mouse_pressed.connect(lambda click_pos, i=i: self._handle_click(i, click_pos))
 
-        self.single_step = 1000  # in milliseconds
+        self.single_step = 33  # in milliseconds
         self.ui.horizontal_slider.valueChanged.connect(self._on_slider_value_changed)
 
     def open_files(self, videos: Sequence[str], undistorters: Sequence[Callable]):
@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
 
         slider_max_value = floor((self.duration.total_seconds() * 1000) / self.single_step)
         self.ui.horizontal_slider.setMaximum(slider_max_value)
+        self.current = self.start
         self.ui.horizontal_slider.setValue(0)
 
     def _go_to(self, dt: datetime):
