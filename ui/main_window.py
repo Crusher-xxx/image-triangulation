@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QMainWindow
 from videosync import intersection
 
 from .uic.main_window import Ui_MainWindow
+from .unprocessed_video_window import UnprocessedVideoWindow
 
 
 class MainWindow(QMainWindow):
@@ -31,6 +32,13 @@ class MainWindow(QMainWindow):
 
         self.single_step = 500  # in milliseconds
         self.ui.horizontal_slider.valueChanged.connect(self._on_slider_value_changed)
+
+        # Unprocessed video
+        self.unprocessed_video_window = UnprocessedVideoWindow()
+        self.ui.action_show_unprocessed_video.toggled.connect(self.unprocessed_video_window.setVisible)
+        self.unprocessed_video_window.closed.connect(lambda: self.ui.action_show_unprocessed_video.setChecked(False))
+        for cam, cam_unprocessed in zip(self.cams, self.unprocessed_video_window.cams):
+            cam._video_sink_raw.videoFrameChanged.connect(lambda f, cam_unprocessed=cam_unprocessed: cam_unprocessed.videoSink().setVideoFrame(f))
 
     def open_files(self, videos: Sequence[str], undistorters: Sequence[Callable]):
         self.clicked_points: defaultdict[datetime, list[QPointF | None]] = defaultdict(lambda: [None, None])

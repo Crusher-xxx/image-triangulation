@@ -3,8 +3,7 @@ from datetime import datetime
 from araviq6 import VideoFrameProcessor, VideoFrameWorker
 from PySide6.QtCore import QFileInfo, QPointF, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QResizeEvent
-from PySide6.QtMultimedia import QMediaPlayer, QVideoSink, QVideoFrame
-from PySide6.QtMultimediaWidgets import QVideoWidget
+from PySide6.QtMultimedia import QMediaPlayer, QVideoSink
 from PySide6.QtWidgets import QGraphicsScene, QWidget
 
 from .graphicsvideoitem import GraphicsVideoItem
@@ -22,9 +21,6 @@ class VideoPlayer(QWidget):
 
         # Unprocessed video frames go here
         self._video_sink_raw = QVideoSink()
-        # Unprocessed video frames are displayed here
-        self._video_widget_raw = QVideoWidget()
-        self._video_widget_raw.show()
         # Processed video frames are displayed here
         self._graphics_video_item = GraphicsVideoItem()
 
@@ -34,7 +30,6 @@ class VideoPlayer(QWidget):
         self._frame_processor.setWorker(self._frame_worker)
         self._frame_processor.videoFrameProcessed.connect(lambda f: self._graphics_video_item.videoSink().setVideoFrame(f))
 
-        self._video_sink_raw.videoFrameChanged.connect(lambda f: self._video_widget_raw.videoSink().setVideoFrame(f))
         self._video_sink_raw.videoFrameChanged.connect(self._frame_processor.processVideoFrame)
         
         self._graphics_scene = QGraphicsScene(self.ui.graphicsView)

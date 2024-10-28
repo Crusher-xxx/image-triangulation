@@ -46,7 +46,14 @@
     <addaction name="action_open_file"/>
     <addaction name="action_export_data"/>
    </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="action_show_unprocessed_video"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuOptions"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_open_file">
@@ -57,6 +64,14 @@
   <action name="action_export_data">
    <property name="text">
     <string>Export</string>
+   </property>
+  </action>
+  <action name="action_show_unprocessed_video">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show unprocessed video</string>
    </property>
   </action>
  </widget>
