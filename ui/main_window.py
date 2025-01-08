@@ -3,8 +3,8 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
 from math import floor
 
-from PySide6.QtCore import QFileInfo, QPointF, Signal
-from PySide6.QtGui import QCloseEvent, QIcon
+from PySide6.QtCore import QFileInfo, QPointF, Qt, Signal
+from PySide6.QtGui import QCloseEvent, QIcon, QKeyEvent
 from PySide6.QtWidgets import QMainWindow
 
 from videosync import intersection
@@ -17,6 +17,7 @@ class MainWindow(QMainWindow):
 
     closed = Signal()
     both_frames_clicked = Signal(datetime, QPointF, QPointF)
+    anchor_clicked = Signal(int, int, QPointF)
 
     def __init__(self):
         super().__init__()
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow):
         for cam, cam_unprocessed in zip(self.cams, self.unprocessed_video_window.cams):
             cam._video_sink_raw.videoFrameChanged.connect(lambda f, cam_unprocessed=cam_unprocessed: cam_unprocessed.videoSink().setVideoFrame(f))
 
+        self._is_editing_anchor = [False, False]
+
     def open_files(self, videos: Sequence[str], undistorters: Sequence[Callable]):
         self.clicked_points: defaultdict[datetime, list[QPointF | None]] = defaultdict(lambda: [None, None])
 
@@ -61,8 +64,8 @@ class MainWindow(QMainWindow):
         durations = timedelta(milliseconds=self.ui.cam1.duration), timedelta(milliseconds=self.ui.cam2.duration)
         self.start, self.end = intersection(starts, durations)
 
-        # !!! Костыль !!! В одном видео Qt почему-то возвращал битый кадр, если
-        # перейти на последнюю миллисекунду.
+        # !!! Костыль !!! Qt почему-то возвращал битый кадр при переходе на
+        # последнюю миллисекунду в одном из записанных видео.
         self.end -= timedelta(milliseconds=1)
         self.duration = self.end - self.start
 
@@ -81,16 +84,48 @@ class MainWindow(QMainWindow):
         self.current = self.start + timedelta(milliseconds=value*self.single_step)
         print(self.current)
         self._go_to(self.current)
+        self._report()
 
     def closeEvent(self, event: QCloseEvent):
         self.closed.emit()
         return super().closeEvent(event)
     
     def _handle_click(self, cam_id: str, click_pos: QPointF):
-        self.clicked_points[self.current][cam_id] = click_pos
+        self._report()
 
-        # Send signal only if both frames have been clicked
+        # Check if we are editing anchor points
+        for anchor_id, is_editing in enumerate(self._is_editing_anchor):
+            if is_editing:
+                self.anchor_clicked.emit(cam_id, anchor_id, click_pos)
+                return
+
+        self.clicked_points[self.current][cam_id] = click_pos
+        # Emit signal only if both frames have been clicked
         if None in self.clicked_points[self.current]:
             return
-
         self.both_frames_clicked.emit(self.current, *self.clicked_points[self.current])
+
+    def _report(self):
+        timestamp = self.current.strftime('%Y-%m-%d_%H-%M-%S.%f')[:-3]
+        msg = timestamp
+        # points = self.clicked_points[self.current]
+        # msg = f'{timestamp} {points[0].toTuple()} {points[1].toTuple()}'
+        self.ui.statusbar.showMessage(msg)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if not event.isAutoRepeat():
+            match event.key():
+                case Qt.Key.Key_1:
+                    self._is_editing_anchor[0] = True
+                case Qt.Key.Key_2:
+                    self._is_editing_anchor[1] = True
+        return super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        if not event.isAutoRepeat():
+            match event.key():
+                case Qt.Key.Key_1:
+                    self._is_editing_anchor[0] = False
+                case Qt.Key.Key_2:
+                    self._is_editing_anchor[1] = False
+        return super().keyReleaseEvent(event)

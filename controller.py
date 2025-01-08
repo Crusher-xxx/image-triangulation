@@ -19,6 +19,11 @@ class Controller:
         self.cam_keys = cam_keys
         self.triangulated_frames: dict[datetime, tuple] = {}
 
+        window.both_frames_clicked.connect(self.triangulate_frame)
+        window.ui.action_open_file.triggered.connect(self.load_file_gui)
+        window.ui.action_export_data.triggered.connect(self.export_data_gui)
+        window.anchor_clicked.connect(self.update_anchor_point)
+
     def load_file_gui(self):
         file_path, _ = QFileDialog.getOpenFileName(self.window, filter='JSON (*.json)')
         if file_path:
@@ -33,7 +38,7 @@ class Controller:
         cp1_geodetic = self.data['cp1_geodetic']
         cp2_geodetic = self.data['cp2_geodetic']
 
-        cams: list[Camera] = []
+        self.cams: list[Camera] = []
         videos: list[str] = []
         undistorters: list[ImageUndistorter] = []
         for cam in self.cam_keys:
@@ -61,8 +66,8 @@ class Controller:
             cp1_world = np.array(pm.geodetic2enu(*cp1_geodetic, *cam_geodetic))
             cp2_world = np.array(pm.geodetic2enu(*cp2_geodetic, *cam_geodetic))
 
-            camera = Camera(undistorter.mtx, cp1_world, cp2_world, cp1_pix, cp2_pix)
-            cams.append(camera)
+            camera = Camera(undistorter.mtx, [cp1_world, cp2_world], [cp1_pix, cp2_pix])
+            self.cams.append(camera)
 
         self.file_info = QFileInfo(file_path)
         videos = [f'{self.file_info.dir().path()}/{video}' for video in videos]
@@ -70,7 +75,7 @@ class Controller:
         
         cam1_world = np.array([0.0, 0.0, 0.0])
         cam2_world = pm.geodetic2enu(*self.data['cam2']['cam_geodetic'], *self.data['cam1']['cam_geodetic'])
-        self.triangulator = Triangulator(*cams, cam1_world, cam2_world)
+        self.triangulator = Triangulator(*self.cams, cam1_world, cam2_world)
 
         self.window.open_files(videos, undistorters_callbacks)
 
@@ -97,3 +102,7 @@ class Controller:
             w = csv.writer(f, delimiter='\t')
             w.writerow(headers)
             w.writerows(rows)
+
+    def update_anchor_point(self, cam_id: int, point_id: int, pos: QPointF):
+        print(locals())
+        self.cams[cam_id].update_anchor_point(point_id, pos.toTuple())

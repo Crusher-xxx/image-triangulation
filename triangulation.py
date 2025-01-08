@@ -40,23 +40,25 @@ def normalize(v):
 
 
 class Camera:
-    def __init__(self, mtx, cp1_world, cp2_world, cp1_pix, cp2_pix) -> None:
+    def __init__(self, mtx, anchors_world, anchors_pix) -> None:
+        assert all(len(points) == 2 for points in (anchors_world, anchors_pix))
+
         self.mtx = mtx
-        
-        cp1_dirvec_cam = pixel2dirvec(cp1_pix, self.mtx)
-        cp2_dirvec_cam = pixel2dirvec(cp2_pix, self.mtx)
+        self.anchors_dirvec_cam = [pixel2dirvec(pix, self.mtx) for pix in anchors_pix]
+        self.anchors_unitvec_cam =[normalize(dirvec) for dirvec in self.anchors_dirvec_cam]
+        self.anchors_unitvec_world = [normalize(cp) for cp in anchors_world]
 
-        cp1_unitvec_cam = normalize(cp1_dirvec_cam)
-        cp2_unitvec_cam = normalize(cp2_dirvec_cam)
-        cp1_unitvec_world = normalize(cp1_world)
-        cp2_unitvec_world = normalize(cp2_world)
+        self.rotation_mtx_cam2world = direction_cosine_matrix(*self.anchors_unitvec_cam, *self.anchors_unitvec_world)
 
-        self.rotation_mtx_cam2world = direction_cosine_matrix(cp1_unitvec_cam, cp2_unitvec_cam, cp1_unitvec_world, cp2_unitvec_world)
+    def update_anchor_point(self, index: int, pix):
+        self.anchors_dirvec_cam[index] = pixel2dirvec(pix, self.mtx)
+        self.anchors_unitvec_cam[index] = normalize(self.anchors_dirvec_cam[index])
+        self.rotation_mtx_cam2world = direction_cosine_matrix(*self.anchors_unitvec_cam, *self.anchors_unitvec_world)
 
     def pixel2dirvec_world(self, pixel):
-        dir_vec_cam = pixel2dirvec(pixel, self.mtx)
-        dir_vec_enu = self.rotation_mtx_cam2world @ dir_vec_cam
-        return dir_vec_enu
+        dirvec_cam = pixel2dirvec(pixel, self.mtx)
+        dirvec_world = self.rotation_mtx_cam2world @ dirvec_cam
+        return dirvec_world
 
 
 class Triangulator:
