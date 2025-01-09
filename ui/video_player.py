@@ -63,7 +63,7 @@ class VideoPlayer(QWidget):
         return super().resizeEvent(event)
     
     def fit2video(self):
-        self.ui.graphicsView.fitInView(self._graphics_video_item, Qt.AspectRatioMode.KeepAspectRatio)
+        self.ui.graphicsView.fitInView(self._graphics_video_item, Qt.AspectRatioMode.IgnoreAspectRatio)
     
     def _on_metadata_changed(self):
         self.duration = self._player.duration()
