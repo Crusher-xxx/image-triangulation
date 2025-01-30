@@ -9,8 +9,6 @@ class GraphicsView(QGraphicsView):
         super().__init__(parent)
         self._zoom_factor = 1
 
-        self.setTransformationAnchor(self.ViewportAnchor.AnchorUnderMouse)
-
     def wheelEvent(self, event: QWheelEvent) -> None:
         angle = event.angleDelta().y()
         zoom_factor = 1 + angle / 1000
@@ -36,16 +34,15 @@ class GraphicsView(QGraphicsView):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
-            self._pan_start_x = event.position().x()
-            self._pan_start_y = event.position().y()
+            self._last_mouse_screen_pos = event.screenPos()
         return super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if event.buttons() is Qt.MouseButton.RightButton:
-            hsb_new = self.horizontalScrollBar().value() - (event.position().x() - self._pan_start_x)
-            vsb_new = self.verticalScrollBar().value() - (event.position().y() - self._pan_start_y)
-            self.horizontalScrollBar().setValue(hsb_new)
-            self.verticalScrollBar().setValue(vsb_new)
-            self._pan_start_x = event.position().x()
-            self._pan_start_y = event.position().y()
+            delta = self._last_mouse_screen_pos - event.screenPos()
+            x_new = self.horizontalScrollBar().value() + delta.x()
+            y_new = self.verticalScrollBar().value() + delta.y()
+            self.horizontalScrollBar().setValue(x_new)
+            self.verticalScrollBar().setValue(y_new)
+            self._last_mouse_screen_pos = event.screenPos()
         return super().mouseMoveEvent(event)

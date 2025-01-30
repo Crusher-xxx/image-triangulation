@@ -34,7 +34,11 @@
     </widget>
    </item>
    <item>
-    <widget class="GraphicsView" name="graphicsView"/>
+    <widget class="GraphicsView" name="graphicsView">
+     <property name="transformationAnchor">
+      <enum>QGraphicsView::ViewportAnchor::AnchorUnderMouse</enum>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

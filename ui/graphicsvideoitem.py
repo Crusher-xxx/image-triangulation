@@ -16,6 +16,7 @@ class GraphicsVideoItem(QGraphicsVideoItem):
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if event.button() is Qt.MouseButton.LeftButton:
             self.mouse_pressed.emit(event.pos())
+        return super().mousePressEvent(event)
 
     def _match_pixels(self):
         # Bring item's size to native video size so that the mouse position represents pixel in the video
