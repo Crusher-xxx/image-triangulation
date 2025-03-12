@@ -61,6 +61,7 @@ class Controller:
             undistorters.append(undistorter)
 
             cam_geodetic = self.data[cam]['cam_geodetic']
+            # TODO: add zero initialization if keys don't exist and maybe notify user!
             cp1_pix = self.data[cam]['cp1_pix']
             cp2_pix = self.data[cam]['cp2_pix']
             cp1_world = np.array(pm.geodetic2enu(*cp1_geodetic, *cam_geodetic))

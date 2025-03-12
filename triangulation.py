@@ -25,7 +25,7 @@ def direction_cosine_matrix(a_v1, a_v2, b_v1, b_v2):
 
 
 def closest_points_along_two_lines(r1, r2, e1, e2):
-    'Возвращает координаты двух точек, образующих кратчайший отрезок между двумя линиями'
+    """Возвращает координаты двух точек, образующих кратчайший отрезок между двумя линиями"""
     n = np.cross(e1, e2)
     t1 = np.dot(np.cross(e2, n), r2 - r1) / np.dot(n, n)
     t2 = np.dot(np.cross(e1, n), r2 - r1) / np.dot(n, n)
@@ -35,7 +35,7 @@ def closest_points_along_two_lines(r1, r2, e1, e2):
 
 
 def normalize(v):
-    'Нормализованный вектор является последовательностью направляющих косинусов'
+    """Нормализованный вектор является последовательностью направляющих косинусов"""
     return v / np.linalg.norm(v)
 
 

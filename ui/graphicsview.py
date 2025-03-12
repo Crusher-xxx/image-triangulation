@@ -14,12 +14,12 @@ class GraphicsView(QGraphicsView):
         zoom_factor = 1 + angle / 1000
 
         # Restrict zooming out too much
-        current_scale = min(self.transform().m11(), self.transform().m22());
-        fit_in_view_scale = min(self._fitInView_scale_x, self._fitInView_scale_y);
+        current_scale = min(self.transform().m11(), self.transform().m22())
+        fit_in_view_scale = min(self._fitInView_scale_x, self._fitInView_scale_y)
         if current_scale * zoom_factor < fit_in_view_scale:
-            zoom_factor = fit_in_view_scale / current_scale;
+            zoom_factor = fit_in_view_scale / current_scale
 
-        self._zoom_factor *= zoom_factor;
+        self._zoom_factor *= zoom_factor
         self.scale(zoom_factor, zoom_factor)
         event.accept()
 
